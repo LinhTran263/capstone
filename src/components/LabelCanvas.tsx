@@ -1,6 +1,6 @@
 "use client"
 import { useRef, useState, useEffect } from 'react';
-import { ImageAnnotator, useImageAnnotator } from 'react-image-label';
+import html2canvas from 'html2canvas';
 
 interface ColorClass {
     active: string;
@@ -39,7 +39,7 @@ const colorClasses: ColorClasses = {
       text: 'Search'
     },
     black: {
-      active: 'bg-gray-500',
+      active: 'bg-zinc-800',
       inactive: 'bg-black',
       text: 'Menu'
     },
@@ -47,7 +47,8 @@ const colorClasses: ColorClasses = {
 
 const LabelCanvas = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [canvasSize, setCanvasSize] = useState<[number, number]>([1000, 500])
+    const divRef = useRef<HTMLDivElement>(null);
+    const [canvasSize, setCanvasSize] = useState<[number, number]>([1200, 500])
     const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
     const [drawing, setDrawing] = useState<boolean>(false);
     const [currentColor, setCurrentColor] = useState<string>('black');
@@ -57,6 +58,10 @@ const LabelCanvas = () => {
     const [currentStyle, setCurrentStyle] = useState<{ color: string; lineWidth: number }>({ color: 'black', lineWidth: 3 });
     const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
     const [displayCanvas, setDisplayCanvas] = useState<boolean>(true)
+
+
+    const [websiteCounter, setWebsiteCounter] = useState<number>(0)
+    const websiteList = ["https://yelp.com", "https://example.com"]
 
     useEffect(() => {
         if (canvasRef.current){
@@ -195,18 +200,27 @@ const LabelCanvas = () => {
     };
 
     const reDrawPreviousData = (ctx: CanvasRenderingContext2D) => {
-        drawingActions.forEach(({path, style}) => {
+        drawingActions.forEach(({ path, style }) => {
             ctx.beginPath();
             ctx.strokeStyle = style.color;
             ctx.lineWidth = style.lineWidth;
-            ctx.moveTo(path[0].x, path[0].y);
-
-            path.forEach((point) => {
-                ctx.lineTo(point.x, point.y);
-            });
-            ctx.stroke();
+            const [start, end] = path; // Rectangle is defined by two corners
+            const width = end.x - start.x;
+            const height = end.y - start.y;
+            ctx.strokeRect(start.x, start.y, width, height);
         });
     };
+
+    const captureDiv = async () => {
+        if (divRef.current) {
+            const canvas = await html2canvas(divRef.current);
+            const imgDataUrl = canvas.toDataURL("image/png");
+
+            // Display the image in a new window/tab
+            const newTab = window.open();
+            newTab?.document.write(`<img src="${imgDataUrl}" alt="Screenshot" />`);
+        }
+    }
 
     return(
         <div className='flex flex-row'>
@@ -214,22 +228,37 @@ const LabelCanvas = () => {
                 {['red', 'blue', 'yellow', 'green', 'orange', 'black'].map((color) => (
                 <div key={color} className='flex flex-row space-x-2 text-black items-center'>
                     <div
-                        key={color}
                         className={`w-8 h-8 rounded-full cursor-pointer ${
                         currentColor === color ? colorClasses[color].active : colorClasses[color].inactive
                         }`}
                         onClick={() => changeColor(color)}
                     />
-                    <p key={color}>{colorClasses[color].text}</p>
+                    <p>{colorClasses[color].text}</p>
                 </div>
                 ))}
             </div>
             <div>
+                <div className='flex justify-center my-4'>
+                    <button className='bg-blue-500 text-white px-4 py-2 mr-2'
+                        onClick={() => setWebsiteCounter((websiteCounter - 1) < 0 ? 0 : (websiteCounter - 1))}>
+                        Back
+                    </button>
+                    <button className='bg-red-500 text-white px-4 py-2'
+                        onClick={() => setWebsiteCounter((websiteCounter + 1) % websiteList.length)}>
+                        Next
+                    </button>
+                    <button onClick={captureDiv} className="p-2 bg-green-500 text-white rounded">
+                        Capture Screenshot
+                    </button>
+
+                </div>
+
                 <div 
+                    ref={divRef}
                     className='relative flex justify-center items-center'
                     style={{width: canvasSize[0], height: canvasSize[1]}}>
                     <iframe 
-                        src="https://yelp.com" 
+                        src={websiteList[websiteCounter]} 
                         title="Website Display"
                         className="absolute top-0 left-0"
                         style={{
