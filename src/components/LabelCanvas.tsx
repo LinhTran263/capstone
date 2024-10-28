@@ -5,6 +5,7 @@ import { ImageAnnotator, useImageAnnotator } from 'react-image-label';
 interface ColorClass {
     active: string;
     inactive: string;
+    text: string;
   }
   
 interface ColorClasses {
@@ -15,31 +16,38 @@ const colorClasses: ColorClasses = {
     red: {
       active: 'bg-red-700',
       inactive: 'bg-red-500',
+      text: 'Button'
     },
     blue: {
       active: 'bg-blue-700',
       inactive: 'bg-blue-500',
+      text: 'Dropdown'
     },
     yellow: {
       active: 'bg-yellow-700',
       inactive: 'bg-yellow-500',
+      text: 'Logo'
     },
     green: {
       active: 'bg-green-700',
       inactive: 'bg-green-500',
+      text: 'Hyperlink'
     },
     orange: {
       active: 'bg-orange-700',
       inactive: 'bg-orange-500',
+      text: 'Search'
     },
     black: {
       active: 'bg-gray-500',
       inactive: 'bg-black',
+      text: 'Menu'
     },
   };  
 
 const LabelCanvas = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [canvasSize, setCanvasSize] = useState<[number, number]>([1000, 500])
     const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
     const [drawing, setDrawing] = useState<boolean>(false);
     const [currentColor, setCurrentColor] = useState<string>('black');
@@ -48,12 +56,13 @@ const LabelCanvas = () => {
     const [currentPath, setCurrentPath] = useState<Array<{x: number, y: number}>>([]);
     const [currentStyle, setCurrentStyle] = useState<{ color: string; lineWidth: number }>({ color: 'black', lineWidth: 3 });
     const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
+    const [displayCanvas, setDisplayCanvas] = useState<boolean>(true)
 
     useEffect(() => {
         if (canvasRef.current){
             const canvas = canvasRef.current;
-            canvas.width = 900;
-            canvas.height = 500;
+            canvas.width = canvasSize[0];
+            canvas.height = canvasSize[1];
             const ctx = canvas.getContext('2d');
             setContext(ctx);
             // reDrawPreviousData(ctx);
@@ -200,55 +209,80 @@ const LabelCanvas = () => {
     };
 
     return(
-        <div>
-            <div className='relative w-[900px] h-[500px] flex justify-center items-center'>
-                <iframe 
-                    src="https://example.com" 
-                    title="Website Display"
-                    className="absolute top-0 left-0 w-[900px] h-[500px]"
-                    style={{ pointerEvents: 'none' }} // Prevent iframe from capturing mouse events
-                />
-
-                <canvas 
-                    ref={canvasRef}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={endDrawing}
-                    onMouseOut={endDrawing}
-                    className='absolute top-0 left-0 border border-gray-400'
-                />
-            </div>
-
-            <div className='flex my-4'>
-                <div className='flex justify-center space-x-4'>
+        <div className='flex flex-row'>
+            <div className='flex justify-center space-y-4 flex-col mx-4'>
                 {['red', 'blue', 'yellow', 'green', 'orange', 'black'].map((color) => (
-                <div
-                    key={color}
-                    className={`w-8 h-8 rounded-full cursor-pointer ${
-                    currentColor === color ? colorClasses[color].active : colorClasses[color].inactive
-                    }`}
-                    onClick={() => changeColor(color)}
-                />
-                ))}
+                <div key={color} className='flex flex-row space-x-2 text-black items-center'>
+                    <div
+                        key={color}
+                        className={`w-8 h-8 rounded-full cursor-pointer ${
+                        currentColor === color ? colorClasses[color].active : colorClasses[color].inactive
+                        }`}
+                        onClick={() => changeColor(color)}
+                    />
+                    <p key={color}>{colorClasses[color].text}</p>
                 </div>
-                <div className='flex-grow' />
-                <input 
-                    type='range'
-                    min={1}
-                    max={10}
-                    value={lineWidth}
-                    onChange={(e) => changeWidth(Number(e.target.value))}
-                />
+                ))}
             </div>
-            <div className='flex justify-center my-4'>
-                <button className='bg-blue-500 text-white px-4 py-2 mr-2'
-                    onClick={undoDrawing}>
-                    Undo
-                </button>
-                <button className='bg-red-500 text-white px-4 py-2'
-                    onClick={clearDrawing}>
-                    Clear
-                </button>
+            <div>
+                <div 
+                    className='relative flex justify-center items-center'
+                    style={{width: canvasSize[0], height: canvasSize[1]}}>
+                    <iframe 
+                        src="https://yelp.com" 
+                        title="Website Display"
+                        className="absolute top-0 left-0"
+                        style={{
+                            width: '100%',
+                            maxWidth: canvasSize[0], // Define your desired max width
+                            overflow: 'auto',   // Enable scrolling within the iframe
+                            height: canvasSize[1]
+                        }}              
+                    />
+
+                    <canvas 
+                        ref={canvasRef}
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={endDrawing}
+                        onMouseOut={endDrawing}
+                        className= {`absolute top-0 left-0 border border-gray-400`}
+                        style={{
+                            zIndex: displayCanvas ? 100 : -100, // Place canvas above iframe when displayCanvas is true
+                        }}            
+                    />
+                </div>
+
+                <div className='flex my-4'>
+                    <div className='flex justify-center my-4'>
+                        <button className='bg-blue-500 text-white px-4 py-2 mr-2'
+                            onClick={undoDrawing}>
+                            Undo
+                        </button>
+                        <button className='bg-red-500 text-white px-4 py-2'
+                            onClick={clearDrawing}>
+                            Clear
+                        </button>
+                    </div>
+
+                    <div className='flex-grow' />
+                    <div>
+                        <button
+                            onClick={() => setDisplayCanvas(!displayCanvas)}
+                            className={`px-4 py-2 rounded ${displayCanvas ? 'bg-green-500 text-white' : 'bg-gray-300 text-black'}`}
+                            >
+                            {displayCanvas ? 'On' : 'Off'}
+                        </button>
+
+                        <input 
+                            type='range'
+                            min={1}
+                            max={10}
+                            value={lineWidth}
+                            onChange={(e) => changeWidth(Number(e.target.value))}
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     )
