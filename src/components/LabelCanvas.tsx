@@ -50,6 +50,7 @@ const colorClasses: ColorClasses = {
 const LabelCanvas = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const divRef = useRef<HTMLDivElement>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
     const [canvasSize, setCanvasSize] = useState<[number, number]>([1200, 500])
     const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
     const [drawing, setDrawing] = useState<boolean>(false);
@@ -76,18 +77,25 @@ const LabelCanvas = () => {
             // reDrawPreviousData(ctx);
         }
 
-        const handleScreenDimensions = (event: MessageEvent) => {
-            if (event.data && event.data.width && event.data.height) {
-                setScreenDimensions({ width: event.data.width, height: event.data.height });
-            }
-        };
-        
-        window.addEventListener('message', handleScreenDimensions);
-        
-        return () => {
-            window.removeEventListener('message', handleScreenDimensions);
-        };
-
+        const iframe = iframeRef.current;
+        if (iframe) {
+            iframe.onload = async () => {
+              try {
+                // Access the iframe's document
+                const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+      
+                if (iframeDocument) {
+                  // Get the dimensions of the iframe's content
+                  const contentHeight = iframeDocument.body.scrollHeight;
+                  const contentWidth = iframeDocument.body.scrollWidth;
+                  setScreenDimensions({ width: contentWidth, height: contentHeight });
+                }
+              } catch (error) {
+                console.error("Could not access iframe content:", error);
+              }
+            };
+        }
+      
     }, [])
 
     // const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -296,11 +304,9 @@ const LabelCanvas = () => {
                     ref={divRef}
                     className='relative flex justify-center items-center'
                     style={{width: canvasSize[0], height: canvasSize[1]}}>
-                    <iframe 
-                        src={websiteList[websiteCounter]} 
-                        srcDoc={`<script>
-                                    document.writeln(window.screen.width,'x',window.screen.height)
-                                </script>`}
+                    <iframe
+                        ref={iframeRef} 
+                        src={"https://yelp.com"} 
                         title="Website Display"
                         className="top-0 left-0"
                         style={{
