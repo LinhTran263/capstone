@@ -1,6 +1,8 @@
 "use client"
 import { useRef, useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
+import IframeResizer from '@iframe-resizer/react'
 
 interface ColorClass {
     active: string;
@@ -58,10 +60,11 @@ const LabelCanvas = () => {
     const [currentStyle, setCurrentStyle] = useState<{ color: string; lineWidth: number }>({ color: 'black', lineWidth: 3 });
     const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
     const [displayCanvas, setDisplayCanvas] = useState<boolean>(true)
+    const [screenDimensions, setScreenDimensions] = useState<{width: number, height: number}>({ width: 0, height: 0 });
 
 
     const [websiteCounter, setWebsiteCounter] = useState<number>(0)
-    const websiteList = ["https://yelp.com", "https://example.com"]
+    const websiteList = ["http://127.0.0.1:5500/frontend/sign_up_page.html","https://yelp.com", "https://example.com"]
 
     useEffect(() => {
         if (canvasRef.current){
@@ -72,6 +75,19 @@ const LabelCanvas = () => {
             setContext(ctx);
             // reDrawPreviousData(ctx);
         }
+
+        const handleScreenDimensions = (event: MessageEvent) => {
+            if (event.data && event.data.width && event.data.height) {
+                setScreenDimensions({ width: event.data.width, height: event.data.height });
+            }
+        };
+        
+        window.addEventListener('message', handleScreenDimensions);
+        
+        return () => {
+            window.removeEventListener('message', handleScreenDimensions);
+        };
+
     }, [])
 
     // const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -211,16 +227,32 @@ const LabelCanvas = () => {
         });
     };
 
-    const captureDiv = async () => {
-        if (divRef.current) {
-            const canvas = await html2canvas(divRef.current);
-            const imgDataUrl = canvas.toDataURL("image/png");
+    // const captureDiv = async () => {
+    //     if (divRef.current) {
+    //         const canvas = await html2canvas(divRef.current);
+    //         const imgDataUrl = canvas.toDataURL("image/png");
 
-            // Display the image in a new window/tab
-            const newTab = window.open();
-            newTab?.document.write(`<img src="${imgDataUrl}" alt="Screenshot" />`);
+    //         // Display the image in a new window/tab
+    //         const newTab = window.open();
+    //         newTab?.document.write(`<img src="${imgDataUrl}" alt="Screenshot" />`);
+    //     }
+    // }
+
+    const captureDiv = () => {
+        if (divRef.current) {
+          toPng(divRef.current)
+            .then((dataUrl) => {
+              const link = document.createElement('a');
+              link.href = dataUrl;
+              link.download = 'screenshot.png';
+              link.click();
+            })
+            .catch((error) => {
+              console.error('Error capturing image:', error);
+            });
         }
-    }
+      };
+      
 
     return(
         <div className='flex flex-row'>
@@ -236,6 +268,12 @@ const LabelCanvas = () => {
                     <p>{colorClasses[color].text}</p>
                 </div>
                 ))}
+                <button
+                    onClick={() => setDisplayCanvas(!displayCanvas)}
+                    className={`px-4 py-2 rounded ${displayCanvas ? 'bg-green-500 text-white' : 'bg-gray-300 text-black'}`}
+                    >
+                    {displayCanvas ? 'On' : 'Off'}
+                </button>
             </div>
             <div>
                 <div className='flex justify-center my-4'>
@@ -250,7 +288,8 @@ const LabelCanvas = () => {
                     <button onClick={captureDiv} className="p-2 bg-green-500 text-white rounded">
                         Capture Screenshot
                     </button>
-
+                    
+                    <div>Screen Dimensions: {screenDimensions.width} x {screenDimensions.height}</div>
                 </div>
 
                 <div 
@@ -259,8 +298,11 @@ const LabelCanvas = () => {
                     style={{width: canvasSize[0], height: canvasSize[1]}}>
                     <iframe 
                         src={websiteList[websiteCounter]} 
+                        srcDoc={`<script>
+                                    document.writeln(window.screen.width,'x',window.screen.height)
+                                </script>`}
                         title="Website Display"
-                        className="absolute top-0 left-0"
+                        className="top-0 left-0"
                         style={{
                             width: '100%',
                             maxWidth: canvasSize[0], // Define your desired max width
@@ -268,6 +310,17 @@ const LabelCanvas = () => {
                             height: canvasSize[1]
                         }}              
                     />
+                    {/* <IframeResizer
+                        license="GPLv3"
+                        src={websiteList[websiteCounter]}
+                        style={{
+                            width: '100%',
+                            maxWidth: canvasSize[0], // Define your desired max width
+                            overflow: 'auto',   // Enable scrolling within the iframe
+                            height: '100%'
+                        }}              
+                    /> */}
+
 
                     <canvas 
                         ref={canvasRef}
@@ -296,12 +349,6 @@ const LabelCanvas = () => {
 
                     <div className='flex-grow' />
                     <div>
-                        <button
-                            onClick={() => setDisplayCanvas(!displayCanvas)}
-                            className={`px-4 py-2 rounded ${displayCanvas ? 'bg-green-500 text-white' : 'bg-gray-300 text-black'}`}
-                            >
-                            {displayCanvas ? 'On' : 'Off'}
-                        </button>
 
                         <input 
                             type='range'

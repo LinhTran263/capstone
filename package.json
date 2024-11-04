@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@iframe-resizer/react": "^5.3.2",
+    "html-to-image": "^1.11.11",
     "html2canvas": "^1.4.1",
     "next": "14.2.14",
     "react": "^18",
