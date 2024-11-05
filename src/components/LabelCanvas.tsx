@@ -2,7 +2,6 @@
 import { useRef, useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { toPng } from 'html-to-image';
-import IframeResizer from '@iframe-resizer/react'
 
 interface ColorClass {
     active: string;
@@ -51,7 +50,7 @@ const LabelCanvas = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const divRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
-    const [canvasSize, setCanvasSize] = useState<[number, number]>([1200, 500])
+    const [isPageLoaded, setIsPageLoaded] = useState(false);
     const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
     const [drawing, setDrawing] = useState<boolean>(false);
     const [currentColor, setCurrentColor] = useState<string>('black');
@@ -68,62 +67,30 @@ const LabelCanvas = () => {
     const websiteList = ["http://127.0.0.1:5500/frontend/sign_up_page.html","https://yelp.com", "https://example.com"]
 
     useEffect(() => {
-        if (canvasRef.current){
-            const canvas = canvasRef.current;
-            canvas.width = canvasSize[0];
-            canvas.height = canvasSize[1];
-            const ctx = canvas.getContext('2d');
-            setContext(ctx);
-            // reDrawPreviousData(ctx);
-        }
+        const img = new Image();
+        img.src = 'image/yelp.png';  // Specify the path to your local image here    
 
-        const iframe = iframeRef.current;
-        if (iframe) {
-            iframe.onload = async () => {
-              try {
-                // Access the iframe's document
-                const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
-      
-                if (iframeDocument) {
-                  // Get the dimensions of the iframe's content
-                  const contentHeight = iframeDocument.body.scrollHeight;
-                  const contentWidth = iframeDocument.body.scrollWidth;
-                  setScreenDimensions({ width: contentWidth, height: contentHeight });
-                }
-              } catch (error) {
-                console.error("Could not access iframe content:", error);
-              }
-            };
-        }
-      
+        img.onload = () => {
+            // After the image has loaded, update the state with the image's dimensions
+            setScreenDimensions({ width: img.width / 1.5, height: img.height });
+          };
+
     }, [])
 
-    // const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    //     if (context) {
-    //         context.beginPath();
-    //         context.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-    //         setDrawing(true);
-    //     }
-    // }
-
-    // const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    //     if (!drawing) return;
-    //     if (context) {
-    //         context.strokeStyle = currentStyle.color;
-    //         context.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-    //         context.stroke();
-    //         setCurrentPath([...currentPath, {x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY}]);
-    //     }
-    // }
-
-    // const endDrawing = () => {
-    //     setDrawing(false);
-    //     context && context.closePath();
-    //     if (currentPath.length > 0){
-    //         setDrawingActions([...drawingActions, {path: currentPath, style: currentStyle}]);
-    //     }
-    //     setCurrentPath([]);
-    // }
+    useEffect(() => {
+        if (canvasRef.current && screenDimensions.width && screenDimensions.height) {
+            const canvas = canvasRef.current;
+            canvas.width = screenDimensions.width;
+            canvas.height = screenDimensions.height;
+    
+            const ctx = canvas.getContext('2d');
+            setContext(ctx);
+    
+            // Optional: redraw previous data
+            // reDrawPreviousData(ctx);
+        }
+    }, [screenDimensions]);  // Depend on canvasSize to run after it updates
+    
 
     const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (context) {
@@ -137,7 +104,9 @@ const LabelCanvas = () => {
     
     const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!drawing || !startPoint) return;
+        console.log("drawing")
         if (context && canvasRef.current) {
+            console.log("drawing 2")
             // Clear the canvas before redrawing the rectangle
             context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     
@@ -235,17 +204,6 @@ const LabelCanvas = () => {
         });
     };
 
-    // const captureDiv = async () => {
-    //     if (divRef.current) {
-    //         const canvas = await html2canvas(divRef.current);
-    //         const imgDataUrl = canvas.toDataURL("image/png");
-
-    //         // Display the image in a new window/tab
-    //         const newTab = window.open();
-    //         newTab?.document.write(`<img src="${imgDataUrl}" alt="Screenshot" />`);
-    //     }
-    // }
-
     const captureDiv = () => {
         if (divRef.current) {
           toPng(divRef.current)
@@ -264,69 +222,73 @@ const LabelCanvas = () => {
 
     return(
         <div className='flex flex-row'>
-            <div className='flex justify-center space-y-4 flex-col mx-4'>
-                {['red', 'blue', 'yellow', 'green', 'orange', 'black'].map((color) => (
-                <div key={color} className='flex flex-row space-x-2 text-black items-center'>
-                    <div
-                        className={`w-8 h-8 rounded-full cursor-pointer ${
-                        currentColor === color ? colorClasses[color].active : colorClasses[color].inactive
-                        }`}
-                        onClick={() => changeColor(color)}
-                    />
-                    <p>{colorClasses[color].text}</p>
-                </div>
-                ))}
-                <button
-                    onClick={() => setDisplayCanvas(!displayCanvas)}
-                    className={`px-4 py-2 rounded ${displayCanvas ? 'bg-green-500 text-white' : 'bg-gray-300 text-black'}`}
-                    >
-                    {displayCanvas ? 'On' : 'Off'}
-                </button>
-            </div>
-            <div>
-                <div className='flex justify-center my-4'>
-                    <button className='bg-blue-500 text-white px-4 py-2 mr-2'
-                        onClick={() => setWebsiteCounter((websiteCounter - 1) < 0 ? 0 : (websiteCounter - 1))}>
-                        Back
-                    </button>
-                    <button className='bg-red-500 text-white px-4 py-2'
-                        onClick={() => setWebsiteCounter((websiteCounter + 1) % websiteList.length)}>
-                        Next
+            <div className='relative h-screen w-[10vw]'>
+                <div className='fixed top-1/2 left-2 transform -translate-y-1/2 flex flex-col space-y-4'>
+                    <div className='flex justify-center my-4'>
+                            <button className='bg-blue-500 text-white px-4 py-2 mr-2'
+                                onClick={undoDrawing}>
+                                Undo
+                            </button>
+                            <button className='bg-red-500 text-white px-4 py-2'
+                                onClick={clearDrawing}>
+                                Clear
+                            </button>
+                        </div>
+
+                    {['red', 'blue', 'yellow', 'green', 'orange', 'black'].map((color) => (
+                    <div key={color} className='flex flex-row space-x-2 text-black items-center'>
+                        <div
+                            className={`w-8 h-8 rounded-full cursor-pointer ${
+                            currentColor === color ? colorClasses[color].active : colorClasses[color].inactive
+                            }`}
+                            onClick={() => changeColor(color)}
+                        />
+                        <p>{colorClasses[color].text}</p>
+                    </div>
+                    ))}
+                    <button
+                        onClick={() => setDisplayCanvas(!displayCanvas)}
+                        className={`px-4 py-2 rounded ${displayCanvas ? 'bg-green-500 text-white' : 'bg-gray-300 text-black'}`}
+                        >
+                        {displayCanvas ? 'On' : 'Off'}
                     </button>
                     <button onClick={captureDiv} className="p-2 bg-green-500 text-white rounded">
-                        Capture Screenshot
+                                Capture Screenshot
                     </button>
-                    
+                    <div className='flex justify-center my-4'>
+                        <button className='bg-blue-500 text-white px-4 py-2 mr-2'
+                            onClick={() => setWebsiteCounter((websiteCounter - 1) < 0 ? 0 : (websiteCounter - 1))}>
+                            Back
+                        </button>
+                        <button className='bg-red-500 text-white px-4 py-2'
+                            onClick={() => setWebsiteCounter((websiteCounter + 1) % websiteList.length)}>
+                            Next
+                        </button>                        
+                    </div>
+
+                </div>
+            </div>
+            <div>
+                <div className='flex justify-center my-4'>                    
                     <div>Screen Dimensions: {screenDimensions.width} x {screenDimensions.height}</div>
                 </div>
 
                 <div 
                     ref={divRef}
                     className='relative flex justify-center items-center'
-                    style={{width: canvasSize[0], height: canvasSize[1]}}>
+                    style={{width: screenDimensions.width + 'px', height: screenDimensions.height + 'px'}}>
                     <iframe
                         ref={iframeRef} 
-                        src={"https://yelp.com"} 
+                        src={websiteList[websiteCounter + 1]} 
                         title="Website Display"
-                        className="top-0 left-0"
+                        className="absolute top-0 left-0"
                         style={{
-                            width: '100%',
-                            maxWidth: canvasSize[0], // Define your desired max width
+                            width: screenDimensions.width + 'px',
+                            maxWidth: screenDimensions.width + 'px', // Define your desired max width
                             overflow: 'auto',   // Enable scrolling within the iframe
-                            height: canvasSize[1]
+                            height: screenDimensions.height + 'px'
                         }}              
                     />
-                    {/* <IframeResizer
-                        license="GPLv3"
-                        src={websiteList[websiteCounter]}
-                        style={{
-                            width: '100%',
-                            maxWidth: canvasSize[0], // Define your desired max width
-                            overflow: 'auto',   // Enable scrolling within the iframe
-                            height: '100%'
-                        }}              
-                    /> */}
-
 
                     <canvas 
                         ref={canvasRef}
@@ -339,31 +301,6 @@ const LabelCanvas = () => {
                             zIndex: displayCanvas ? 100 : -100, // Place canvas above iframe when displayCanvas is true
                         }}            
                     />
-                </div>
-
-                <div className='flex my-4'>
-                    <div className='flex justify-center my-4'>
-                        <button className='bg-blue-500 text-white px-4 py-2 mr-2'
-                            onClick={undoDrawing}>
-                            Undo
-                        </button>
-                        <button className='bg-red-500 text-white px-4 py-2'
-                            onClick={clearDrawing}>
-                            Clear
-                        </button>
-                    </div>
-
-                    <div className='flex-grow' />
-                    <div>
-
-                        <input 
-                            type='range'
-                            min={1}
-                            max={10}
-                            value={lineWidth}
-                            onChange={(e) => changeWidth(Number(e.target.value))}
-                        />
-                    </div>
                 </div>
             </div>
         </div>

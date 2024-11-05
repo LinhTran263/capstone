@@ -1,0 +1,79 @@
+        // window.addEventListener("message", function (event) {
+        //     // Optional: Validate the origin of the message for security
+        //     // if (event.origin !== "http://localhost:5010") return;
+        //     handleMessage(event);
+        //     const iframe = document.getElementById("target");
+        //     const { width, height } = event.data;
+
+        //     if (width && height) {
+        //         console.log(width, height)
+        //         // iframe.style.width = width;
+        //         // iframe.style.height = height;
+        //         setScreenDimensions({ width, height });
+        //     }
+        // });
+
+
+        // const handleMessage = (event: MessageEvent) => {
+        //     // Ensure the message is from the expected origin
+        //     console.log("Message received:", event);
+        //     // if (event.origin === "http://127.0.0.1:5500") {
+        //       const { width, height } = event.data;
+        //       console.log("Reach here");
+        //       setScreenDimensions({ width, height });
+        //     // }
+        //   };
+
+        // window.addEventListener("message", handleMessage);
+        // console.log("Message listener added");  // Check if listener is actually added
+        // return () => {
+        //     window.removeEventListener("message", handleMessage);
+        //     console.log("Message listener removed");  // Verify listener is removed on unmount
+        // };
+      
+        // const iframe = iframeRef.current;
+        // if (iframe) {
+        //     iframe.onload = async () => {
+        //       try {
+        //         // Access the iframe's document
+        //         const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+      
+        //         if (iframeDocument) {
+        //           // Get the dimensions of the iframe's content
+        //           const contentHeight = iframeDocument.body.scrollHeight;
+        //           const contentWidth = iframeDocument.body.scrollWidth;
+        //           setScreenDimensions({ width: contentWidth, height: contentHeight });
+        //         }
+        //       } catch (error) {
+        //         console.error("Could not access iframe content:", error);
+        //       }
+        //     };
+        // }
+
+
+            // const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    //     if (context) {
+    //         context.beginPath();
+    //         context.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    //         setDrawing(true);
+    //     }
+    // }
+
+    // const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    //     if (!drawing) return;
+    //     if (context) {
+    //         context.strokeStyle = currentStyle.color;
+    //         context.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    //         context.stroke();
+    //         setCurrentPath([...currentPath, {x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY}]);
+    //     }
+    // }
+
+    // const endDrawing = () => {
+    //     setDrawing(false);
+    //     context && context.closePath();
+    //     if (currentPath.length > 0){
+    //         setDrawingActions([...drawingActions, {path: currentPath, style: currentStyle}]);
+    //     }
+    //     setCurrentPath([]);
+    // }
